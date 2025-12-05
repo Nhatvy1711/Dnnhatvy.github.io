@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --light-bg: #f8f9fa;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary-color), #2980b9);
+            color: white;
+            padding: 25px 0;
+            margin-bottom: 30px;
+            border-radius: 0 0 15px 15px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .stat-card.total-products {
+            border-top: 4px solid var(--primary-color);
+        }
+        
+        .stat-card.total-value {
+            border-top: 4px solid var(--success-color);
+        }
+        
+        .stat-card.avg-price {
+            border-top: 4px solid var(--warning-color);
+        }
+        
+        .stat-card.low-stock {
+            border-top: 4px solid var(--danger-color);
+        }
+        
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            opacity: 0.8;
+        }
+        
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+        
+        .card-custom {
+            border: none;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+        
+        .card-header-custom {
+            background-color: white;
+            border-bottom: 2px solid #eee;
+            padding: 20px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: #2c3e50;
+        }
+        
+        .low-stock-badge {
+            background-color: #ffeaea;
+            color: var(--danger-color);
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        
+        .recent-badge {
+            background-color: #e8f4f8;
+            color: var(--primary-color);
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        
+        .category-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            margin: 3px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        
+        .progress-custom {
+            height: 25px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-bar-custom {
+            background: linear-gradient(90deg, var(--primary-color), #36A2EB);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-dashboard {
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-dashboard:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #95a5a6;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">📊 Product Analytics Dashboard</h1>
+                    <p class="mb-0 opacity-75">Real-time insights and statistics for your product inventory</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a th:href="@{/products}" class="btn btn-light btn-dashboard">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Products
+                    </a>
+                    <a th:href="@{/dashboard}" class="btn btn-outline-light btn-dashboard ms-2">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Error Message -->
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card total-products">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-value" th:text="${totalProducts}">0</div>
+                    <div class="stat-label">Total Products</div>
+                    <div class="text-muted small mt-2">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Across all categories
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card total-value">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-value">$<span th:text="${totalValue}">0.00</span></div>
+                    <div class="stat-label">Total Inventory Value</div>
+                    <div class="text-muted small mt-2">
+                        <i class="fas fa-chart-line me-1"></i>
+                        Price × Quantity
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card avg-price">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-value">$<span th:text="${averagePrice}">0.00</span></div>
+                    <div class="stat-label">Average Product Price</div>
+                    <div class="text-muted small mt-2">
+                        <i class="fas fa-calculator me-1"></i>
+                        Mean price per product
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card low-stock">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-value" th:text="${lowStockProducts != null ? lowStockProducts.size() : 0}">0</div>
+                    <div class="stat-label">Low Stock Alerts</div>
+                    <div class="text-muted small mt-2">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Quantity < 10 units
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="row">
+            <!-- Left Column: Category Distribution & Recent Products -->
+            <div class="col-lg-6">
+                <!-- Category Distribution -->
+                <div class="card-custom">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-chart-pie me-2"></i>Category Distribution</span>
+                        <span class="badge bg-primary">Total: <span th:text="${totalProducts}">0</span></span>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${categoryData != null and !categoryData.isEmpty()}">
+                            <div class="chart-container">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <h6 class="mb-3">Category Breakdown</h6>
+                                <div th:each="category : ${categoryData}" class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="fw-medium" th:text="${category[0]}">Category</span>
+                                        <span class="fw-bold" th:text="${category[1]}">0</span>
+                                    </div>
+                                    <div class="progress progress-custom">
+                                        <div class="progress-bar progress-bar-custom" 
+                                             th:style="'width:' + ${(category[1]/totalProducts)*100} + '%;'"
+                                             th:text="${#numbers.formatDecimal((category[1]/totalProducts)*100, 1, 0)} + '%'">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div th:if="${categoryData == null or categoryData.isEmpty()}" class="empty-state">
+                            <i class="fas fa-chart-pie"></i>
+                            <h5 class="mt-3">No Category Data</h5>
+                            <p>Add products with categories to see distribution</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Products -->
+                <div class="card-custom">
+                    <div class="card-header-custom">
+                        <i class="fas fa-clock me-2"></i>Recently Added Products
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${recentProducts != null and !recentProducts.isEmpty()}">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Category</th>
+                                            <th>Price</th>
+                                            <th>Stock</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="product : ${recentProducts}">
+                                            <td class="fw-medium" th:text="${product.name}"></td>
+                                            <td><span class="category-badge" th:text="${product.category}"></span></td>
+                                            <td class="fw-bold">$<span th:text="${#numbers.formatDecimal(product.price, 1, 2)}"></span></td>
+                                            <td>
+                                                <span th:class="${product.quantity < 10} ? 'low-stock-badge' : 'badge bg-light text-dark'"
+                                                      th:text="${product.quantity}">
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div th:if="${recentProducts == null or recentProducts.isEmpty()}" class="empty-state">
+                            <i class="fas fa-box-open"></i>
+                            <h5 class="mt-3">No Recent Products</h5>
+                            <p>Newly added products will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Low Stock Alerts & Inventory Health -->
+            <div class="col-lg-6">
+                <!-- Low Stock Alerts -->
+                <div class="card-custom">
+                    <div class="card-header-custom bg-danger bg-opacity-10 text-danger border-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alerts
+                        <span class="badge bg-danger ms-2" th:text="${lowStockProducts != null ? lowStockProducts.size() : 0}">0</span>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${lowStockProducts != null and !lowStockProducts.isEmpty()}">
+                            <div class="alert alert-warning" role="alert">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Action Required:</strong> These products need restocking soon!
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Current Stock</th>
+                                            <th>Price</th>
+                                            <th>Value</th>
+                                            <th>Category</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="product : ${lowStockProducts}" class="align-middle">
+                                            <td class="fw-medium" th:text="${product.name}"></td>
+                                            <td>
+                                                <span class="low-stock-badge">
+                                                    <i class="fas fa-box me-1"></i>
+                                                    <span th:text="${product.quantity}"></span> units
+                                                </span>
+                                            </td>
+                                            <td class="fw-bold">$<span th:text="${#numbers.formatDecimal(product.price, 1, 2)}"></span></td>
+                                            <td class="text-danger fw-bold">
+                                                $<span th:text="${#numbers.formatDecimal(product.price * product.quantity, 1, 2)}"></span>
+                                            </td>
+                                            <td><span class="category-badge" th:text="${product.category}"></span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Tip:</strong> Consider reordering products with less than 5 units in stock.
+                            </div>
+                        </div>
+                        <div th:if="${lowStockProducts == null or lowStockProducts.isEmpty()}" class="empty-state">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <h5 class="mt-3 text-success">All Products Well Stocked! 🎉</h5>
+                            <p>No products are running low on inventory.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory Health Summary -->
+                <div class="card-custom">
+                    <div class="card-header-custom">
+                        <i class="fas fa-heartbeat me-2"></i>Inventory Health Summary
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="p-3 rounded" style="background-color: #e8f4f8;">
+                                    <div class="fw-bold fs-4" th:text="${totalProducts}">0</div>
+                                    <div class="small text-muted">Total SKUs</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-3 rounded" style="background-color: #e8f6f3;">
+                                    <div class="fw-bold fs-4" th:text="${categoryData != null ? categoryData.size() : 0}">0</div>
+                                    <div class="small text-muted">Categories</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-3 rounded" th:style="${lowStockProducts != null and lowStockProducts.size() > 0} ? 'background-color: #ffeaea;' : 'background-color: #e8f6f3;'">
+                                    <div class="fw-bold fs-4" th:text="${lowStockProducts != null ? lowStockProducts.size() : 0}">0</div>
+                                    <div class="small text-muted">Need Restock</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h6 class="mb-3">Quick Actions</h6>
+                            <div class="d-grid gap-2 d-md-flex">
+                                <a th:href="@{/products/new}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>Add New Product
+                                </a>
+                                <a th:href="@{/products}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-list me-2"></i>View All Products
+                                </a>
+                                <a th:href="@{/products/advanced-search}" class="btn btn-outline-info">
+                                    <i class="fas fa-search me-2"></i>Advanced Search
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js Script -->
+    <script th:inline="javascript">
+    /*<![CDATA[*/
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if we have category data
+        const hasCategoryData = /*[[${categoryData != null and !categoryData.isEmpty()}]]*/ false;
+        
+        if (hasCategoryData) {
+            // Prepare data for pie chart
+            const categoryLabels = [];
+            const categoryCounts = [];
+            const categoryColors = [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+                '#9966FF', '#FF9F40', '#8AC926', '#1982C4',
+                '#6A0572', '#AB83A1'
+            ];
+            
+            /*[# th:each="category : ${categoryData}"]*/
+            categoryLabels.push(/*[[${category[0]}]]*/);
+            categoryCounts.push(/*[[${category[1]}]]*/);
+            /*[/]*/
+            
+            const totalProducts = /*[[${totalProducts}]]*/ 1;
+            
+            // Create pie chart
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: categoryLabels,
+                    datasets: [{
+                        data: categoryCounts,
+                        backgroundColor: categoryColors.slice(0, categoryLabels.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const percentage = Math.round((value / totalProducts) * 100);
+                                    return `${label}: ${value} products (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true
+                    }
+                }
+            });
+        } else {
+            // Hide chart container if no data
+            const chartCard = document.querySelector('#categoryChart').closest('.card-custom');
+            if (chartCard) {
+                chartCard.style.display = 'none';
+            }
+        }
+    });
+    /*]]>*/
+    </script>
+
+    <!-- Bootstrap & FontAwesome -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</body>
+</html>

@@ -1,5 +1,6 @@
 package com.example.productmanagement.entity;
 
+import jakarta.validation.constraints.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,21 +13,34 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
+    @NotBlank(message = "Product code is required")
+    @Size(min = 3, max = 20, message = "Product code must be 3-20 characters")
+    @Pattern(regexp = "^[A-Z][A-Z0-9]{2,19}$", message = "Product code must start with uppercase letter")
     @Column(name = "product_code", unique = true, nullable = false, length = 20)
     private String productCode;
     
+    @NotBlank(message = "Product name is required")
+    @Size(min = 3, max = 100, message = "Name must be 3-100 characters")
     @Column(nullable = false, length = 100)
     private String name;
     
+    @NotNull(message = "Price is required")
+    @DecimalMin(value = "0.01", message = "Price must be greater than 0")
+    @DecimalMax(value = "999999.99", message = "Price cannot exceed 999,999.99")
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
     
+    @NotNull(message = "Quantity is required")
+    @Min(value = 0, message = "Quantity cannot be negative")
     @Column(nullable = false)
     private Integer quantity;
     
+    @NotBlank(message = "Category is required")
+    @Size(min = 2, max = 50, message = "Category must be 2-50 characters")
     @Column(length = 50)
     private String category;
     
+    @Size(max = 1000, message = "Description cannot exceed 1000 characters")
     @Column(columnDefinition = "TEXT")
     private String description;
     

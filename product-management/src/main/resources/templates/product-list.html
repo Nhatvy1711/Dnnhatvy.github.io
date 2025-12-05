@@ -196,6 +196,60 @@
                         </td>
                     </tr>
                 </tbody>
+
+                <thead>
+                <tr>
+                    <th>
+                        <a th:href="@{/products(sortField='id', sortDir=${(sortField=='id' and sortDir=='asc')?'desc':'asc'})}">
+                            ID
+                            <span th:if="${sortField=='id'}" 
+                                th:text="${sortDir=='asc'?'↑':'↓'}"></span>
+                        </a>
+                    </th>
+                    <th>
+                        <a th:href="@{/products(sortField='productCode', sortDir=${(sortField=='productCode' and sortDir=='asc')?'desc':'asc'})}">
+                            Code
+                            <span th:if="${sortField=='productCode'}" 
+                                th:text="${sortDir=='asc'?'↑':'↓'}"></span>
+                        </a>
+                    </th>
+                    <th>
+                        <a th:href="@{/products(sortField='name', sortDir=${(sortField=='name' and sortDir=='asc')?'desc':'asc'})}">
+                            Name
+                            <span th:if="${sortField=='name'}" 
+                                th:text="${sortDir=='asc'?'↑':'↓'}"></span>
+                        </a>
+                    </th>
+                    <th>
+                        <a th:href="@{/products(sortField='price', sortDir=${(sortField=='price' and sortDir=='asc')?'desc':'asc'})}">
+                            Price
+                            <span th:if="${sortField=='price'}" 
+                                th:text="${sortDir=='asc'?'↑':'↓'}"></span>
+                        </a>
+                    </th>
+                    <th>
+                        <a th:href="@{/products(sortField='quantity', sortDir=${(sortField=='quantity' and sortDir=='asc')?'desc':'asc'})}">
+                            Quantity
+                            <span th:if="${sortField=='quantity'}" 
+                                th:text="${sortDir=='asc'?'↑':'↓'}"></span>
+                        </a>
+                    </th>
+                    <th>
+                        <a th:href="@{/products(sortField='category', sortDir=${(sortField=='category' and sortDir=='asc')?'desc':'asc'})}">
+                            Category
+                            <span th:if="${sortField=='category'}" 
+                                th:text="${sortDir=='asc'?'↑':'↓'}"></span>
+                        </a>
+                    </th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+            <!-- Cập nhật các sorting links để giữ filter -->
+                <a th:href="@{/products/advanced-search(name=${searchName}, category=${searchCategory}, 
+                        minPrice=${minPrice}, maxPrice=${maxPrice}, 
+                        sortField='name', sortDir=${(sortField=='name' and sortDir=='asc')?'desc':'asc'})}">
+                    Name
+                </a>
             </table>
         </div>
         
@@ -204,5 +258,91 @@
             <p>No products found. Add your first product!</p>
         </div>
     </div>
+    <!-- Thêm vào sau search form hiện tại -->
+    <div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+    <h3>Advanced Search</h3>
+    <form th:action="@{/products/advanced-search}" method="get">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+            <div>
+                <label>Product Name:</label>
+                <input type="text" name="name" th:value="${searchName}" 
+                       placeholder="Enter product name..." class="form-control">
+            </div>
+            <div>
+                <label>Category:</label>
+                <input type="text" name="category" th:value="${searchCategory}" 
+                       placeholder="Enter category..." class="form-control">
+            </div>
+            <div>
+                <label>Min Price:</label>
+                <input type="number" name="minPrice" th:value="${minPrice}" 
+                       step="0.01" placeholder="0.00" class="form-control">
+            </div>
+            <div>
+                <label>Max Price:</label>
+                <input type="number" name="maxPrice" th:value="${maxPrice}" 
+                       step="0.01" placeholder="999999.99" class="form-control">
+            </div>
+        </div>
+        <div style="margin-top: 10px;">
+            <button type="submit" class="btn btn-primary">🔍 Advanced Search</button>
+            <a th:href="@{/products}" class="btn btn-secondary">Clear Filters</a>
+        </div>
+    </form>
+    </div>
+    <select name="category" onchange="this.form.submit()">
+        <option value="">All Categories</option>
+        <option th:each="cat : ${categories}" 
+            th:value="${cat}" 
+            th:text="${cat}"
+            th:selected="${cat == selectedCategory}">
+        </option>
+    </select>
+    <!-- Thêm vào cuối product-list.html -->
+    <div th:if="${totalPages > 1}" class="pagination" style="margin-top: 20px; text-align: center;">
+        <nav>
+            <ul class="pagination">
+                <!-- Previous button -->
+                <li th:class="${currentPage == 0} ? 'page-item disabled' : 'page-item'">
+                    <a th:href="@{/products/search(keyword=${keyword}, page=${currentPage-1}, size=${pageSize})}" 
+                    class="page-link">Previous</a>
+                </li>
+                
+                <!-- Page numbers -->
+                <li th:each="i : ${#numbers.sequence(0, totalPages-1)}" 
+                    th:class="${i == currentPage} ? 'page-item active' : 'page-item'">
+                    <a th:href="@{/products/search(keyword=${keyword}, page=${i}, size=${pageSize})}" 
+                    th:text="${i+1}" class="page-link"></a>
+                </li>
+                
+                <!-- Next button -->
+                <li th:class="${currentPage == totalPages-1} ? 'page-item disabled' : 'page-item'">
+                    <a th:href="@{/products/search(keyword=${keyword}, page=${currentPage+1}, size=${pageSize})}" 
+                    class="page-link">Next</a>
+                </li>
+            </ul>
+        </nav>
+    
+    <!-- Page size selector -->
+        <div style="margin-top: 10px;">
+            <span>Show </span>
+            <select id="pageSizeSelect" onchange="changePageSize()" style="padding: 5px;">
+                <option value="5" th:selected="${pageSize == 5}">5</option>
+                <option value="10" th:selected="${pageSize == 10}">10</option>
+                <option value="20" th:selected="${pageSize == 20}">20</option>
+                <option value="50" th:selected="${pageSize == 50}">50</option>
+            </select>
+            <span> items per page</span>
+        </div>
+    </div>
+
+    <script>
+    function changePageSize() {
+        const pageSize = document.getElementById('pageSizeSelect').value;
+        const keyword = '[[${keyword}]]' || '';
+        window.location.href = '/products/search?keyword=' + keyword + '&page=0&size=' + pageSize;
+    }
+    </script>
+
 </body>
 </html>

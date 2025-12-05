@@ -1,0 +1,50 @@
+<!-- File: src/main/resources/templates/categories.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Product Categories</title>
+    <style>
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .category-card {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .category-card:hover {
+            background: #e9ecef;
+            transform: translateY(-5px);
+        }
+        .category-count {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Product Categories</h1>
+        <a th:href="@{/products}" class="btn btn-primary">Back to Products</a>
+        
+        <div class="category-grid">
+            <div th:each="category : ${categories}" 
+                 class="category-card"
+                 onclick="window.location.href='/categories/' + encodeURIComponent('[[${category}]]')">
+                <h3 th:text="${category}">Category</h3>
+                <div class="category-count">
+                    <span th:text="${#lists.size(productService.getProductsByCategory(category))}">0</span> products
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

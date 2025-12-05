@@ -5,7 +5,12 @@ import com.example.productmanagement.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,5 +54,34 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public List<Product> getProductsByCategory(String category) {
         return productRepository.findByCategory(category);
+    }
+    @Override
+    public List<Product> searchAdvanced(String name, String category, BigDecimal minPrice, BigDecimal maxPrice) {
+        return productRepository.searchAdvanced(name, category, minPrice, maxPrice);
+    }
+    //5.2
+    @Override
+    public List<String> getAllCategories() {
+        return productRepository.findAllCategories();
+    }
+    @Override
+    public Page<Product> searchProducts(String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return productRepository.findByNameContaining(keyword, pageable);
+    }
+
+    @Override
+    public Page<Product> getProductsByCategory(String category, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return productRepository.findByCategory(category, pageable);
+    }
+    @Override
+    public List<Product> getAllProducts(Sort sort) {
+        return productRepository.findAll(sort);
+    }
+
+    @Override
+    public List<Product> searchProducts(String keyword, Sort sort) {
+        return productRepository.findByNameContaining(keyword, sort);
     }
 }

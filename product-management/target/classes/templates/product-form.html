@@ -91,6 +91,20 @@
             display: flex;
             justify-content: center;
         }
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875em;
+            margin-top: 5px;
+        }
+        .error-field {
+            border-color: #dc3545 !important;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group.has-error {
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 <body>
@@ -166,5 +180,106 @@
             </div>
         </form>
     </div>
+    <form th:action="@{/products/save}" th:object="${product}" method="post">
+        <input type="hidden" th:field="*{id}" />
+        
+        <!-- Product Code với validation -->
+        <div class="form-group" th:classappend="${#fields.hasErrors('productCode')} ? 'has-error' : ''">
+            <label for="productCode">Product Code *</label>
+            <input type="text" 
+                   id="productCode" 
+                   th:field="*{productCode}"
+                   th:errorclass="error-field"
+                   placeholder="Enter product code (e.g., P001)"
+                   class="form-control" />
+            <div th:if="${#fields.hasErrors('productCode')}" 
+                 th:errors="*{productCode}" 
+                 class="error-message"></div>
+        </div>
+        
+        <!-- Name với validation -->
+        <div class="form-group" th:classappend="${#fields.hasErrors('name')} ? 'has-error' : ''">
+            <label for="name">Product Name *</label>
+            <input type="text" 
+                   id="name" 
+                   th:field="*{name}"
+                   th:errorclass="error-field"
+                   placeholder="Enter product name"
+                   class="form-control" />
+            <div th:if="${#fields.hasErrors('name')}" 
+                 th:errors="*{name}" 
+                 class="error-message"></div>
+        </div>
+        
+        <!-- Price với validation -->
+        <div class="form-group" th:classappend="${#fields.hasErrors('price')} ? 'has-error' : ''">
+            <label for="price">Price ($) *</label>
+            <input type="number" 
+                   id="price" 
+                   th:field="*{price}"
+                   th:errorclass="error-field"
+                   step="0.01" 
+                   min="0"
+                   placeholder="0.00"
+                   class="form-control" />
+            <div th:if="${#fields.hasErrors('price')}" 
+                 th:errors="*{price}" 
+                 class="error-message"></div>
+        </div>
+        
+        <!-- Quantity với validation -->
+        <div class="form-group" th:classappend="${#fields.hasErrors('quantity')} ? 'has-error' : ''">
+            <label for="quantity">Quantity *</label>
+            <input type="number" 
+                   id="quantity" 
+                   th:field="*{quantity}"
+                   th:errorclass="error-field"
+                   min="0"
+                   placeholder="0"
+                   class="form-control" />
+            <div th:if="${#fields.hasErrors('quantity')}" 
+                 th:errors="*{quantity}" 
+                 class="error-message"></div>
+        </div>
+        
+        <!-- Category với validation -->
+        <div class="form-group" th:classappend="${#fields.hasErrors('category')} ? 'has-error' : ''">
+            <label for="category">Category *</label>
+            <select id="category" 
+                    th:field="*{category}"
+                    th:errorclass="error-field"
+                    class="form-control">
+                <option value="">Select category</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Furniture">Furniture</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Books">Books</option>
+                <option value="Food">Food</option>
+                <option value="Other">Other</option>
+            </select>
+            <div th:if="${#fields.hasErrors('category')}" 
+                 th:errors="*{category}" 
+                 class="error-message"></div>
+        </div>
+        
+        <!-- Description (optional) -->
+        <div class="form-group" th:classappend="${#fields.hasErrors('description')} ? 'has-error' : ''">
+            <label for="description">Description</label>
+            <textarea id="description" 
+                      th:field="*{description}"
+                      th:errorclass="error-field"
+                      placeholder="Enter product description (optional)"
+                      class="form-control"></textarea>
+            <div th:if="${#fields.hasErrors('description')}" 
+                 th:errors="*{description}" 
+                 class="error-message"></div>
+        </div>
+        
+        <!-- Buttons -->
+        <div class="button-group">
+            <button type="submit" class="btn btn-primary">💾 Save Product</button>
+            <a th:href="@{/products}" class="btn btn-secondary">❌ Cancel</a>
+        </div>
+    </form>
 </body>
 </html>
