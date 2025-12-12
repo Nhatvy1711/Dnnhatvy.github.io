@@ -1,17 +1,26 @@
 package com.example.customer_api.service;
 
-import com.example.customer_api.dto.CustomerRequestDTO;
-import com.example.customer_api.dto.CustomerResponseDTO;
-import com.example.customer_api.entity.Customer;
-import com.example.customer_api.exception.DuplicateResourceException;
-import com.example.customer_api.exception.ResourceNotFoundException;
-import com.example.customer_api.repository.CustomerRepository;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.example.customer_api.dto.AdvancedSearchDTO;
+import com.example.customer_api.dto.CustomerRequestDTO;
+import com.example.customer_api.dto.CustomerResponseDTO;
+import com.example.customer_api.dto.CustomerUpdateDTO;
+import com.example.customer_api.entity.Customer;
+import com.example.customer_api.entity.CustomerStatus;
+import com.example.customer_api.exception.DuplicateResourceException;
+import com.example.customer_api.exception.ResourceNotFoundException;
+import com.example.customer_api.repository.CustomerRepository;
 
 @Service
 @Transactional
@@ -100,13 +109,19 @@ public class CustomerServiceImpl implements CustomerService {
     }
     
     @Override
-    public List<CustomerResponseDTO> getCustomersByStatus(String status) {
-        return customerRepository.findByStatus(status)
+public List<CustomerResponseDTO> getCustomersByStatus(String status) {
+    try {
+        // Convert String to Enum
+        CustomerStatus statusEnum = CustomerStatus.valueOf(status.toUpperCase());
+        return customerRepository.findByStatus(statusEnum)
                 .stream()
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
+    } catch (IllegalArgumentException e) {
+        // Trả về danh sách rỗng nếu status không hợp lệ
+        return new ArrayList<>();
     }
-    
+}
     // Helper Methods for DTO Conversion
     
     private CustomerResponseDTO convertToResponseDTO(Customer customer) {
@@ -132,4 +147,105 @@ public class CustomerServiceImpl implements CustomerService {
         customer.setAddress(dto.getAddress());
         return customer;
     }
+
+    // CustomerServiceImpl.java - Thêm method này
+
+    @Override
+public List<CustomerResponseDTO> advancedSearch(AdvancedSearchDTO searchDTO) {
+    CustomerStatus statusEnum = null;
+    
+    if (searchDTO.getStatus() != null && !searchDTO.getStatus().trim().isEmpty()) {
+        try {
+            statusEnum = CustomerStatus.valueOf(searchDTO.getStatus().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            // Nếu status không hợp lệ, coi như không có filter
+            // Hoặc có thể throw exception: throw new IllegalArgumentException("Invalid status");
+        }
+    }
+    
+    List<Customer> customers = customerRepository.advancedSearch(
+        searchDTO.getName(),
+        searchDTO.getEmail(),
+        statusEnum,  // Truyền enum, có thể là null
+        searchDTO.getPhone(),
+        searchDTO.getCustomerCode()
+    );
+    
+    return customers.stream()
+            .map(this::convertToResponseDTO)
+            .collect(Collectors.toList());
 }
+    // CustomerServiceImpl.java - Thêm method này
+
+    @Override
+    public Page<CustomerResponseDTO> getAllCustomersPaginated(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Customer> customerPage = customerRepository.findAll(pageable);
+        
+        return customerPage.map(this::convertToResponseDTO);
+    }
+
+    @Override
+    public List<CustomerResponseDTO> getAllCustomersSorted(String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase("desc") 
+            ? Sort.by(sortBy).descending() 
+            : Sort.by(sortBy).ascending();
+        
+        List<Customer> customers = customerRepository.findAll(sort);
+        
+        return customers.stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<CustomerResponseDTO> getAllCustomersPaginatedAndSorted(int page, int size, String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase("desc") 
+            ? Sort.by(sortBy).descending() 
+            : Sort.by(sortBy).ascending();
+        
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Customer> customerPage = customerRepository.findAll(pageable);
+        
+        return customerPage.map(this::convertToResponseDTO);
+    }
+
+    @Override
+    public CustomerResponseDTO partialUpdateCustomer(Long id, CustomerUpdateDTO updateDTO) {
+        Customer existingCustomer = customerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
+        
+        // Check if email is being changed to an existing one
+        if (updateDTO.getEmail() != null && 
+            !existingCustomer.getEmail().equals(updateDTO.getEmail()) && 
+            customerRepository.existsByEmail(updateDTO.getEmail())) {
+            throw new DuplicateResourceException("Email already exists: " + updateDTO.getEmail());
+        }
+        
+        // Only update non-null fields
+        if (updateDTO.getFullName() != null) {
+            existingCustomer.setFullName(updateDTO.getFullName());
+        }
+        if (updateDTO.getEmail() != null) {
+            existingCustomer.setEmail(updateDTO.getEmail());
+        }
+        if (updateDTO.getPhone() != null) {
+            existingCustomer.setPhone(updateDTO.getPhone());
+        }
+        if (updateDTO.getAddress() != null) {
+            existingCustomer.setAddress(updateDTO.getAddress());
+        }
+        if (updateDTO.getStatus() != null) {
+            try {
+                CustomerStatus status = CustomerStatus.valueOf(updateDTO.getStatus().toUpperCase());
+                existingCustomer.setStatus(status);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid status value. Must be ACTIVE or INACTIVE");
+            }
+        }
+        
+        Customer updatedCustomer = customerRepository.save(existingCustomer);
+        return convertToResponseDTO(updatedCustomer);
+    }
+}
+

@@ -1,6 +1,8 @@
 package com.example.customer_api.exception;
 
-import com.example.customer_api.dto.ErrorResponseDTO;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -9,8 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.example.customer_api.dto.ErrorResponseDTO;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -83,5 +84,21 @@ public class GlobalExceptionHandler {
         );
         
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // Handle IllegalArgumentException (400)
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponseDTO> handleIllegalArgumentException(
+            IllegalArgumentException ex,
+            WebRequest request) {
+        
+        ErrorResponseDTO error = new ErrorResponseDTO(
+            HttpStatus.BAD_REQUEST.value(),
+            "Bad Request",
+            ex.getMessage(),
+            request.getDescription(false).replace("uri=", "")
+        );
+        
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 }

@@ -35,7 +35,7 @@ automatically.
 
 ### 1.2 Database Setup -- How It Works
 
-#### 1) MySQL
+#### 1 MySQL
 
 You create a database and the `customers` table.
 
